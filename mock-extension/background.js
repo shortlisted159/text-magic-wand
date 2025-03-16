@@ -1,6 +1,5 @@
-
-// This would be the background script for the actual Chrome extension
-// It would handle communication between the content script and popup
+// Background script for the Text Magic Wand Chrome extension
+// Handles communication between content script and popup
 
 // Initialize context menu items
 chrome.runtime.onInstalled.addListener(function() {
@@ -76,51 +75,46 @@ chrome.contextMenus.onClicked.addListener(function(info, tab) {
   }
   
   if (action) {
-    // Send message to active tab to process the selected text
-    chrome.tabs.sendMessage(tab.id, {
-      action: 'transformText',
-      type: action,
-      text: info.selectionText,
-      params: params
-    });
+    // Process the transformation and send back to content script
+    processTransformation(action, info.selectionText, params)
+      .then(function(result) {
+        chrome.tabs.sendMessage(tab.id, {
+          action: 'replaceText',
+          text: result
+        });
+      });
   }
 });
 
-// Listen for popup requests from content script
+// Listen for messages from content script
 chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
-  if (message.action === 'showPopup') {
-    // Forward message to the content script that sent it
-    chrome.tabs.sendMessage(sender.tab.id, {
-      action: 'createPopup',
-      position: message.position,
-      text: message.text
-    });
-  } else if (message.action === 'transformText') {
-    // Load user settings from storage
+  if (message.action === 'transformText') {
+    // Load user settings
     chrome.storage.sync.get(null, function(settings) {
       // Process transformation based on type
-      // In a real extension, this might use external APIs
-      processTransformation(message.type, message.text, settings)
+      processTransformation(message.type, message.text, message.params || {}, settings)
         .then(function(result) {
-          // Send transformed text back to content script
-          chrome.tabs.sendMessage(sender.tab.id, {
-            action: 'replaceText',
-            text: result
-          });
+          // Send result back to sender
+          sendResponse({ text: result });
         });
     });
+    // Keep the message channel open for the async response
+    return true;
+  } else if (message.action === 'replaceText' && sender.tab) {
+    // Forward the replacement message to the content script
+    chrome.tabs.sendMessage(sender.tab.id, message);
   }
 });
 
 // Function to process text transformations
-async function processTransformation(type, text, settings) {
-  // This would use APIs in a real extension
+async function processTransformation(type, text, params = {}, settings = {}) {
+  // In a real extension, this would call APIs or use AI models
   // For now, we'll use simple mock transformations
   
   switch (type) {
     case 'tone':
-      // Mock tone transformation
-      return `[${settings.tone || 'formal'} tone] ${text}`;
+      const tone = params.tone || settings.defaultTone || 'formal';
+      return `[${tone} tone] ${text}`;
       
     case 'grammar':
       // Mock grammar check
@@ -130,13 +124,12 @@ async function processTransformation(type, text, settings) {
         .replace(/\byour welcome\b/g, "you're welcome");
       
     case 'translate':
-      // Mock translation
-      return `[Translated to ${settings.primaryLanguage || 'English'}] ${text}`;
+      const language = params.language || settings.primaryLanguage || 'English';
+      return `[Translated to ${language}] ${text}`;
       
     case 'pronounce':
-      // In a real extension, this would get pronunciation data
-      // For now, just return the original text
-      return text;
+      // In a real extension, this would get pronunciation data or play audio
+      return `${text} [pronunciation: /mock-pronunciation/]`;
       
     case 'meaning':
       // Mock meaning lookup

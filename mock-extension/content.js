@@ -1,6 +1,9 @@
 
-// This would be the content script for the actual Chrome extension
-// It would inject the text selection popup into web pages
+// Content script for the Text Magic Wand Chrome extension
+// This script handles text selection and popup creation
+
+// Track if the popup is already shown
+let popupShown = false;
 
 // Listen for text selection
 document.addEventListener('mouseup', function(event) {
@@ -13,15 +16,17 @@ document.addEventListener('mouseup', function(event) {
     const range = selection.getRangeAt(0);
     const rect = range.getBoundingClientRect();
     
-    // Send message to background script with selected text and position
-    chrome.runtime.sendMessage({
-      action: 'showPopup',
-      text: selectedText,
-      position: {
-        x: rect.left + window.scrollX,
-        y: rect.top + window.scrollY
-      }
-    });
+    // Show the popup at the selection
+    showPopup({
+      x: rect.left + window.scrollX,
+      y: rect.top + window.scrollY
+    }, selectedText);
+  } else if (popupShown) {
+    // Check if click is outside the popup to close it
+    const popup = document.getElementById('text-magic-wand-popup');
+    if (popup && !popup.contains(event.target)) {
+      removePopup();
+    }
   }
 });
 
@@ -29,18 +34,23 @@ document.addEventListener('mouseup', function(event) {
 chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
   if (message.action === 'replaceText') {
     // Replace the selected text with transformed text
-    document.execCommand('insertText', false, message.text);
-    sendResponse({ success: true });
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      range.deleteContents();
+      range.insertNode(document.createTextNode(message.text));
+      removePopup();
+      sendResponse({ success: true });
+    } else {
+      sendResponse({ success: false, error: 'No text selected' });
+    }
   }
 });
 
-// Create and inject popup when requested
-function createPopup(position, text) {
+// Create popup function
+function showPopup(position, text) {
   // Remove any existing popup
-  const existingPopup = document.getElementById('text-magic-wand-popup');
-  if (existingPopup) {
-    existingPopup.remove();
-  }
+  removePopup();
   
   // Create popup container
   const popup = document.createElement('div');
@@ -53,24 +63,31 @@ function createPopup(position, text) {
   
   // Add buttons for each transformation
   const actions = [
-    { name: 'Tone', icon: '✨' },
-    { name: 'Grammar', icon: '✓' },
-    { name: 'Translate', icon: '🌐' },
-    { name: 'Pronounce', icon: '🔊' },
-    { name: 'Meaning', icon: '📚' }
+    { name: 'Tone', icon: '✨', tooltip: 'Rewrite Tone' },
+    { name: 'Grammar', icon: '✓', tooltip: 'Check Grammar' },
+    { name: 'Translate', icon: '🌐', tooltip: 'Translate' },
+    { name: 'Pronounce', icon: '🔊', tooltip: 'Pronounce' },
+    { name: 'Meaning', icon: '📚', tooltip: 'Get Meaning' }
   ];
   
   actions.forEach(action => {
     const button = document.createElement('button');
     button.className = 'text-magic-wand-button';
     button.innerHTML = `<span>${action.icon}</span>`;
-    button.title = action.name;
+    button.title = action.tooltip;
     
     button.addEventListener('click', function() {
       chrome.runtime.sendMessage({
         action: 'transformText',
         type: action.name.toLowerCase(),
         text: text
+      }, function(response) {
+        if (response && response.text) {
+          chrome.runtime.sendMessage({
+            action: 'replaceText',
+            text: response.text
+          });
+        }
       });
     });
     
@@ -79,20 +96,26 @@ function createPopup(position, text) {
   
   // Add popup to document
   document.body.appendChild(popup);
+  popupShown = true;
   
-  // Close popup when clicking outside
-  document.addEventListener('mousedown', function closePopup(e) {
-    if (!popup.contains(e.target)) {
-      popup.remove();
-      document.removeEventListener('mousedown', closePopup);
-    }
-  });
+  // Add event listener to close popup when clicking outside
+  document.addEventListener('mousedown', handleOutsideClick);
 }
 
-// Listen for popup creation request from background script
-chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
-  if (message.action === 'createPopup') {
-    createPopup(message.position, message.text);
-    sendResponse({ success: true });
+// Handle clicks outside the popup
+function handleOutsideClick(e) {
+  const popup = document.getElementById('text-magic-wand-popup');
+  if (popup && !popup.contains(e.target)) {
+    removePopup();
   }
-});
+}
+
+// Remove popup function
+function removePopup() {
+  const popup = document.getElementById('text-magic-wand-popup');
+  if (popup) {
+    popup.remove();
+    popupShown = false;
+    document.removeEventListener('mousedown', handleOutsideClick);
+  }
+}
