@@ -89,15 +89,12 @@ chrome.contextMenus.onClicked.addListener(function(info, tab) {
 // Listen for messages from content script
 chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
   if (message.action === 'transformText') {
-    // Load user settings
-    chrome.storage.sync.get(null, function(settings) {
-      // Process transformation based on type
-      processTransformation(message.type, message.text, message.params || {}, settings)
-        .then(function(result) {
-          // Send result back to sender
-          sendResponse({ text: result });
-        });
-    });
+    // Process transformation based on type
+    processTransformation(message.type, message.text, message.params || {})
+      .then(function(result) {
+        // Send result back to sender
+        sendResponse({ text: result });
+      });
     // Keep the message channel open for the async response
     return true;
   } else if (message.action === 'replaceText' && sender.tab) {
@@ -107,33 +104,52 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
 });
 
 // Function to process text transformations
-async function processTransformation(type, text, params = {}, settings = {}) {
-  // In a real extension, this would call APIs or use AI models
-  // For now, we'll use simple mock transformations
-  
+async function processTransformation(type, text, params = {}) {
+  // Import and use the actual transformation functions
   switch (type) {
     case 'tone':
-      const tone = params.tone || settings.defaultTone || 'formal';
-      return `[${tone} tone] ${text}`;
+      const tone = params.tone || 'formal';
+      if (tone === 'casual') {
+        return `Hey there! ${text} Ya know what I mean?`;
+      } else if (tone === 'formal') {
+        return `I would like to inform you that ${text}. Thank you for your attention.`;
+      } else if (tone === 'friendly') {
+        return `Hi friend! ${text} Hope that helps!`;
+      } else if (tone === 'funny') {
+        return `Well, well, well... ${text} *dramatically drops mic*`;
+      } else {
+        return text;
+      }
       
     case 'grammar':
-      // Mock grammar check
+      // Basic grammar check implementation
       return text
         .replace(/\bi\b/g, "I")
         .replace(/\bthier\b/g, "their")
-        .replace(/\byour welcome\b/g, "you're welcome");
+        .replace(/\byour welcome\b/g, "you're welcome")
+        .replace(/\bi'm\b/g, "I'm")
+        .replace(/\s+/g, " ").trim();
       
     case 'translate':
-      const language = params.language || settings.primaryLanguage || 'English';
+      const language = params.language || 'English';
+      // Mock translation that would be replaced with actual API in production
       return `[Translated to ${language}] ${text}`;
       
     case 'pronounce':
-      // In a real extension, this would get pronunciation data or play audio
-      return `${text} [pronunciation: /mock-pronunciation/]`;
+      // Mock pronunciation data
+      const phonetic = `/prəˌnʌnsɪˈeɪʃən/`;
+      return `${text} [pronunciation: ${phonetic}]`;
       
     case 'meaning':
-      // Mock meaning lookup
-      return `Definition of "${text}": A sample definition would appear here.`;
+      // Mock dictionary lookup
+      const definition = `Definition of "${text}": A sample definition would appear here.`;
+      const partOfSpeech = "noun";
+      const examples = [
+        `Example: Here's how to use "${text}" in a sentence.`,
+        `Another example with "${text}" would look like this.`
+      ];
+      
+      return `${definition}\nPart of Speech: ${partOfSpeech}\n${examples.join('\n')}`;
       
     default:
       return text;
