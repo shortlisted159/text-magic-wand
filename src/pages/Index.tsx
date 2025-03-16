@@ -139,7 +139,7 @@ const Index = () => {
             <TabsTrigger value="tone"><Wand2 className="mr-2 h-4 w-4" /> Tone</TabsTrigger>
             <TabsTrigger value="grammar"><Check className="mr-2 h-4 w-4" /> Grammar</TabsTrigger>
             <TabsTrigger value="translate"><Globe className="mr-2 h-4 w-4" /> Translate</TabsTrigger>
-            <TabsTrigger value="pronounce"><VolumeUp className="mr-2 h-4 w-4" /> Pronounce</TabsTrigger>
+            <TabsTrigger value="pronounce"><Volume className="mr-2 h-4 w-4" /> Pronounce</TabsTrigger>
             <TabsTrigger value="meaning"><Book className="mr-2 h-4 w-4" /> Meaning</TabsTrigger>
           </TabsList>
           
@@ -221,7 +221,7 @@ const Index = () => {
                 <div className="flex gap-2">
                   <Button onClick={() => handleTransformText("pronounce")}>Get Pronunciation</Button>
                   <Button variant="outline" size="icon" onClick={playPronunciation}>
-                    <VolumeUp className="h-4 w-4" />
+                    <Volume className="h-4 w-4" />
                   </Button>
                 </div>
               </TabsContent>
