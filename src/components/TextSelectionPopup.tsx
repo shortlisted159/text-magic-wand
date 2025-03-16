@@ -2,7 +2,7 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Wand2, Check, Globe, VolumeUp, Book } from "lucide-react";
+import { Wand2, Check, Globe, Volume, Book } from "lucide-react";
 import { useSettings } from "@/contexts/SettingsContext";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -68,7 +68,7 @@ const TextSelectionPopup: React.FC<TextSelectionPopupProps> = ({
           <Tooltip>
             <TooltipTrigger asChild>
               <Button variant="ghost" size="icon" onClick={() => onAction("pronounce")}>
-                <VolumeUp className="h-4 w-4" />
+                <Volume className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>

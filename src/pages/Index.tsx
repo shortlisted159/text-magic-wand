@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/components/ui/use-toast";
-import { Mic, VolumeUp, Wand2, Check, Globe, Book, Settings as SettingsIcon } from "lucide-react";
+import { Mic, Volume, Wand2, Check, Globe, Book, Settings as SettingsIcon } from "lucide-react";
 import ChromeExtensionSimulator from "@/components/ChromeExtensionSimulator";
 import { Link } from "react-router-dom";
 import { useSettings } from "@/contexts/SettingsContext";
