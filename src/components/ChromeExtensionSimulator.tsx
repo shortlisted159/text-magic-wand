@@ -3,7 +3,14 @@ import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import TextSelectionPopup from "./TextSelectionPopup";
 import { useToast } from "@/components/ui/use-toast";
-import { transformTone, checkGrammar, translateText, getPronunciation, getMeaning } from "@/utils/textTransformations";
+import { 
+  transformTone, 
+  checkGrammar, 
+  translateText, 
+  getPronunciation, 
+  getMeaning,
+  playPronunciation
+} from "@/utils/textTransformations";
 import { useSettings } from "@/contexts/SettingsContext";
 
 const ChromeExtensionSimulator: React.FC = () => {
@@ -11,6 +18,7 @@ const ChromeExtensionSimulator: React.FC = () => {
   const [showPopup, setShowPopup] = useState(false);
   const [popupPosition, setPopupPosition] = useState({ x: 0, y: 0 });
   const [result, setResult] = useState("");
+  const [isPlaying, setIsPlaying] = useState(false);
   const { toast } = useToast();
   const { settings } = useSettings();
 
@@ -34,7 +42,7 @@ const ChromeExtensionSimulator: React.FC = () => {
     }
   };
 
-  const handleAction = (action: string) => {
+  const handleAction = async (action: string) => {
     if (!selectedText) return;
     
     let actionResult = "";
@@ -69,10 +77,14 @@ const ChromeExtensionSimulator: React.FC = () => {
           `${selectedText} ${pronunciation.phonetic}` : 
           `${selectedText} [Phonetic spelling disabled in settings]`;
         
+        // Auto-play pronunciation if setting is enabled
         if (settings.autoPlayPronunciation) {
+          setIsPlaying(true);
+          await playPronunciation(selectedText);
+          setIsPlaying(false);
           toast({
-            title: "Pronunciation auto-played",
-            description: "Audio pronunciation played automatically (simulated)."
+            title: "Pronunciation played",
+            description: "Audio pronunciation played automatically."
           });
         } else {
           toast({
@@ -103,6 +115,32 @@ const ChromeExtensionSimulator: React.FC = () => {
     setShowPopup(false);
   };
 
+  const handlePlayPronunciation = async () => {
+    if (selectedText && !isPlaying) {
+      setIsPlaying(true);
+      toast({
+        title: "Playing pronunciation",
+        description: "Audio pronunciation is playing..."
+      });
+      
+      try {
+        await playPronunciation(selectedText);
+        toast({
+          title: "Pronunciation complete",
+          description: "Audio pronunciation finished playing."
+        });
+      } catch (error) {
+        toast({
+          title: "Pronunciation error",
+          description: "There was an error playing the audio.",
+          variant: "destructive"
+        });
+      } finally {
+        setIsPlaying(false);
+      }
+    }
+  };
+
   useEffect(() => {
     document.addEventListener("mouseup", handleTextSelection);
     
@@ -131,6 +169,10 @@ const ChromeExtensionSimulator: React.FC = () => {
               Sometimes i make grammar mistakes when i write quickly. Thier are many reasons for this,
               but your welcome to correct me. Technology is amazing when it helps us communicate better.
             </p>
+            <p>
+              Common words for testing: hello, goodbye, book, computer, program. Try selecting these for 
+              pronunciation and meaning features.
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -141,6 +183,15 @@ const ChromeExtensionSimulator: React.FC = () => {
             <h3 className="font-medium mb-2">Transformation Result:</h3>
             <div className="p-3 bg-muted rounded-md whitespace-pre-line">
               {result}
+              {result.includes("Phonetic") && (
+                <button 
+                  className="ml-2 p-1 bg-primary text-primary-foreground rounded-full"
+                  onClick={handlePlayPronunciation}
+                  disabled={isPlaying}
+                >
+                  {isPlaying ? "▶️..." : "▶️"}
+                </button>
+              )}
             </div>
           </CardContent>
         </Card>

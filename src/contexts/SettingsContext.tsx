@@ -16,6 +16,7 @@ export interface SettingsState {
 interface SettingsContextType {
   settings: SettingsState;
   updateSettings: (newSettings: SettingsState) => void;
+  isInitialized: boolean;
 }
 
 const defaultSettings: SettingsState = {
@@ -32,7 +33,8 @@ const defaultSettings: SettingsState = {
 
 const SettingsContext = createContext<SettingsContextType>({
   settings: defaultSettings,
-  updateSettings: () => {}
+  updateSettings: () => {},
+  isInitialized: false
 });
 
 export const useSettings = () => useContext(SettingsContext);
@@ -82,13 +84,8 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     localStorage.setItem("textMagicWandSettings", JSON.stringify(newSettings));
   };
   
-  if (!isInitialized) {
-    // You could show a loading state here if needed
-    return null;
-  }
-  
   return (
-    <SettingsContext.Provider value={{ settings, updateSettings }}>
+    <SettingsContext.Provider value={{ settings, updateSettings, isInitialized }}>
       {children}
     </SettingsContext.Provider>
   );

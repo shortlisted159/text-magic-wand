@@ -18,7 +18,8 @@ import {
   checkGrammar, 
   translateText, 
   getPronunciation, 
-  getMeaning 
+  getMeaning,
+  playPronunciation
 } from "@/utils/textTransformations";
 
 const Index = () => {
@@ -26,10 +27,11 @@ const Index = () => {
   const [outputText, setOutputText] = useState("");
   const [selectedTone, setSelectedTone] = useState("casual");
   const [selectedLanguage, setSelectedLanguage] = useState("english");
+  const [isPlaying, setIsPlaying] = useState(false);
   const { toast } = useToast();
-  const { settings } = useSettings();
+  const { settings, updateSettings } = useSettings();
   
-  const handleTransformText = (type: string) => {
+  const handleTransformText = async (type: string) => {
     if (!inputText.trim()) {
       toast({
         title: "No text provided",
@@ -54,7 +56,9 @@ const Index = () => {
         result = checkGrammar(inputText);
         toast({
           title: "Grammar checked",
-          description: "Grammar and spelling checked successfully."
+          description: settings.grammarAutoDetect ? 
+            "Grammar and spelling checked successfully." :
+            "Grammar checking is disabled in settings."
         });
         break;
       case "translate":
@@ -66,11 +70,25 @@ const Index = () => {
         break;
       case "pronounce":
         const pronunciation = getPronunciation(inputText);
-        result = `${inputText} ${pronunciation.phonetic}`;
-        toast({
-          title: "Pronunciation ready",
-          description: "Click the speaker icon to hear pronunciation."
-        });
+        result = settings.showPhonetic ? 
+          `${inputText} ${pronunciation.phonetic}` : 
+          `${inputText} [Phonetic spelling disabled in settings]`;
+        
+        // Auto-play pronunciation if setting is enabled
+        if (settings.autoPlayPronunciation) {
+          setIsPlaying(true);
+          await playPronunciation(inputText);
+          setIsPlaying(false);
+          toast({
+            title: "Pronunciation played",
+            description: "Audio pronunciation played automatically."
+          });
+        } else {
+          toast({
+            title: "Pronunciation ready",
+            description: "Click the speaker icon to hear pronunciation."
+          });
+        }
         break;
       case "meaning":
         const meaning = getMeaning(
@@ -79,7 +97,7 @@ const Index = () => {
           settings.showPartOfSpeech
         );
         result = `Definition: ${meaning.definition}`;
-        if (meaning.partOfSpeech) {
+        if (meaning.partOfSpeech && settings.showPartOfSpeech) {
           result += `\nPart of speech: ${meaning.partOfSpeech}`;
         }
         if (meaning.examples && meaning.examples.length > 0) {
@@ -97,11 +115,36 @@ const Index = () => {
     setOutputText(result);
   };
 
-  const playPronunciation = () => {
-    toast({
-      title: "Audio playback",
-      description: "This would play audio pronunciation in a real extension."
-    });
+  const handlePlayPronunciation = async () => {
+    if (inputText && !isPlaying) {
+      setIsPlaying(true);
+      toast({
+        title: "Playing pronunciation",
+        description: "Audio pronunciation is playing..."
+      });
+      
+      try {
+        await playPronunciation(inputText);
+        toast({
+          title: "Pronunciation complete",
+          description: "Audio pronunciation finished playing."
+        });
+      } catch (error) {
+        toast({
+          title: "Pronunciation error",
+          description: "There was an error playing the audio.",
+          variant: "destructive"
+        });
+      } finally {
+        setIsPlaying(false);
+      }
+    } else if (!inputText) {
+      toast({
+        title: "No text to pronounce",
+        description: "Please enter some text first.",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
@@ -173,8 +216,7 @@ const Index = () => {
                       id="auto-correct" 
                       checked={settings.grammarAutoDetect}
                       onCheckedChange={(checked) => {
-                        const newSettings = { ...settings, grammarAutoDetect: checked };
-                        useSettings().updateSettings(newSettings);
+                        updateSettings({ ...settings, grammarAutoDetect: checked });
                       }}
                     />
                     <Label htmlFor="auto-correct">Auto-correct as I type</Label>
@@ -213,27 +255,58 @@ const Index = () => {
                       <Switch 
                         id="show-phonetic" 
                         checked={settings.showPhonetic}
+                        onCheckedChange={(checked) => {
+                          updateSettings({ ...settings, showPhonetic: checked });
+                        }}
                       />
                       <Label htmlFor="show-phonetic">Show phonetic spelling</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Switch 
+                        id="auto-play" 
+                        checked={settings.autoPlayPronunciation}
+                        onCheckedChange={(checked) => {
+                          updateSettings({ ...settings, autoPlayPronunciation: checked });
+                        }}
+                      />
+                      <Label htmlFor="auto-play">Auto-play pronunciation</Label>
                     </div>
                   </div>
                 </div>
                 <div className="flex gap-2">
                   <Button onClick={() => handleTransformText("pronounce")}>Get Pronunciation</Button>
-                  <Button variant="outline" size="icon" onClick={playPronunciation}>
-                    <Volume className="h-4 w-4" />
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    onClick={handlePlayPronunciation}
+                    disabled={isPlaying}
+                  >
+                    <Volume className={`h-4 w-4 ${isPlaying ? 'animate-pulse' : ''}`} />
                   </Button>
                 </div>
               </TabsContent>
               
               <TabsContent value="meaning" className="space-y-4">
                 <div className="space-y-2">
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2 mb-2">
                     <Switch 
                       id="include-examples" 
                       checked={settings.includeExamples}
+                      onCheckedChange={(checked) => {
+                        updateSettings({ ...settings, includeExamples: checked });
+                      }}
                     />
                     <Label htmlFor="include-examples">Include usage examples</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Switch 
+                      id="show-part-of-speech" 
+                      checked={settings.showPartOfSpeech}
+                      onCheckedChange={(checked) => {
+                        updateSettings({ ...settings, showPartOfSpeech: checked });
+                      }}
+                    />
+                    <Label htmlFor="show-part-of-speech">Show part of speech</Label>
                   </div>
                 </div>
                 <Button onClick={() => handleTransformText("meaning")}>Get Meaning</Button>
@@ -248,12 +321,27 @@ const Index = () => {
             <CardDescription>Your processed text will appear here</CardDescription>
           </CardHeader>
           <CardContent>
-            <Textarea 
-              placeholder="Results will appear here..." 
-              className="min-h-[150px]"
-              value={outputText}
-              readOnly
-            />
+            <div className="space-y-4">
+              <Textarea 
+                placeholder="Results will appear here..." 
+                className="min-h-[150px]"
+                value={outputText}
+                readOnly
+              />
+              
+              {outputText.includes("pronunciation") && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handlePlayPronunciation}
+                  disabled={isPlaying}
+                  className="flex items-center"
+                >
+                  <Volume className={`h-4 w-4 mr-2 ${isPlaying ? 'animate-pulse' : ''}`} />
+                  {isPlaying ? "Playing..." : "Play Pronunciation"}
+                </Button>
+              )}
+            </div>
           </CardContent>
         </Card>
         
