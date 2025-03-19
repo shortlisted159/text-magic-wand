@@ -29,7 +29,10 @@ const TextSelectionPopup: React.FC<TextSelectionPopupProps> = ({
   };
   
   return (
-    <Card className={`p-2 shadow-lg ${settings.darkMode ? 'bg-slate-800' : 'bg-white'}`} style={popupStyle}>
+    <Card 
+      className={`p-2 shadow-lg ${settings.darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white'}`} 
+      style={popupStyle}
+    >
       <div className="flex space-x-1">
         <TooltipProvider>
           <Tooltip>
@@ -50,7 +53,7 @@ const TextSelectionPopup: React.FC<TextSelectionPopupProps> = ({
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Check Grammar</p>
+              <p>Check Grammar {!settings.grammarAutoDetect && "(Disabled)"}</p>
             </TooltipContent>
           </Tooltip>
           
@@ -61,7 +64,7 @@ const TextSelectionPopup: React.FC<TextSelectionPopupProps> = ({
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Translate</p>
+              <p>Translate to {settings.primaryLanguage}</p>
             </TooltipContent>
           </Tooltip>
           
@@ -72,7 +75,7 @@ const TextSelectionPopup: React.FC<TextSelectionPopupProps> = ({
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Pronounce</p>
+              <p>Pronounce {settings.autoPlayPronunciation && "(Auto-play)"}</p>
             </TooltipContent>
           </Tooltip>
           

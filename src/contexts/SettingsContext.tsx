@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 
-interface SettingsState {
+export interface SettingsState {
   darkMode: boolean;
   grammarAutoDetect: boolean;
   grammarHighlight: boolean;
@@ -39,29 +39,53 @@ export const useSettings = () => useContext(SettingsContext);
 
 export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [settings, setSettings] = useState<SettingsState>(defaultSettings);
+  const [isInitialized, setIsInitialized] = useState(false);
   
+  // Load settings from storage on component mount
   useEffect(() => {
-    // On component mount, load settings from storage
-    const loadSettings = async () => {
+    const loadSettings = () => {
       try {
-        // In a real extension, this would use chrome.storage.sync.get
         const savedSettings = localStorage.getItem("textMagicWandSettings");
         if (savedSettings) {
-          setSettings(JSON.parse(savedSettings));
+          const parsedSettings = JSON.parse(savedSettings);
+          setSettings(parsedSettings);
+          
+          // Apply dark mode if set
+          if (parsedSettings.darkMode) {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
         }
+        setIsInitialized(true);
       } catch (error) {
         console.error("Error loading settings:", error);
+        setIsInitialized(true);
       }
     };
     
     loadSettings();
   }, []);
   
+  // Update settings and save to storage
   const updateSettings = (newSettings: SettingsState) => {
     setSettings(newSettings);
-    // In a real extension, this would use chrome.storage.sync.set
+    
+    // Apply dark mode changes immediately
+    if (newSettings.darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    
+    // Save to localStorage
     localStorage.setItem("textMagicWandSettings", JSON.stringify(newSettings));
   };
+  
+  if (!isInitialized) {
+    // You could show a loading state here if needed
+    return null;
+  }
   
   return (
     <SettingsContext.Provider value={{ settings, updateSettings }}>

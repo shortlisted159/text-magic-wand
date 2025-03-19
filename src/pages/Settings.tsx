@@ -14,9 +14,11 @@ const Settings = () => {
   const { toast } = useToast();
 
   const saveSettings = () => {
+    // Since updateSettings already saves to localStorage,
+    // we just need to show a success message
     toast({
       title: "Settings saved",
-      description: "Your preferences have been updated."
+      description: "Your preferences have been updated and are now active."
     });
   };
 
@@ -91,10 +93,16 @@ const Settings = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="english">English</SelectItem>
-                  <SelectItem value="hindi">Hindi</SelectItem>
                   <SelectItem value="spanish">Spanish</SelectItem>
-                  <SelectItem value="german">German</SelectItem>
                   <SelectItem value="french">French</SelectItem>
+                  <SelectItem value="german">German</SelectItem>
+                  <SelectItem value="italian">Italian</SelectItem>
+                  <SelectItem value="portuguese">Portuguese</SelectItem>
+                  <SelectItem value="russian">Russian</SelectItem>
+                  <SelectItem value="japanese">Japanese</SelectItem>
+                  <SelectItem value="chinese">Chinese</SelectItem>
+                  <SelectItem value="arabic">Arabic</SelectItem>
+                  <SelectItem value="hindi">Hindi</SelectItem>
                 </SelectContent>
               </Select>
             </div>

@@ -51,11 +51,13 @@ const ChromeExtensionSimulator: React.FC = () => {
         actionResult = checkGrammar(selectedText);
         toast({
           title: "Grammar checked",
-          description: "Grammar and spelling checked successfully."
+          description: settings.grammarAutoDetect ? 
+            "Grammar and spelling checked successfully." :
+            "Grammar checking is disabled in settings."
         });
         break;
       case "translate":
-        actionResult = translateText(selectedText, settings.primaryLanguage);
+        actionResult = translateText(selectedText);
         toast({
           title: "Text translated",
           description: `Translated to ${settings.primaryLanguage}.`
@@ -63,24 +65,34 @@ const ChromeExtensionSimulator: React.FC = () => {
         break;
       case "pronounce":
         const pronunciation = getPronunciation(selectedText);
-        actionResult = `${selectedText} ${pronunciation.phonetic}`;
-        toast({
-          title: "Pronunciation ready",
-          description: "Click the speaker icon to hear pronunciation."
-        });
+        actionResult = settings.showPhonetic ? 
+          `${selectedText} ${pronunciation.phonetic}` : 
+          `${selectedText} [Phonetic spelling disabled in settings]`;
+        
+        if (settings.autoPlayPronunciation) {
+          toast({
+            title: "Pronunciation auto-played",
+            description: "Audio pronunciation played automatically (simulated)."
+          });
+        } else {
+          toast({
+            title: "Pronunciation ready",
+            description: "Click the speaker icon to hear pronunciation."
+          });
+        }
         break;
       case "meaning":
-        const meaning = getMeaning(selectedText, settings.includeExamples, settings.showPartOfSpeech);
+        const meaning = getMeaning(selectedText);
         actionResult = `Definition: ${meaning.definition}`;
-        if (meaning.partOfSpeech) {
+        if (meaning.partOfSpeech && settings.showPartOfSpeech) {
           actionResult += `\nPart of speech: ${meaning.partOfSpeech}`;
         }
-        if (meaning.examples && meaning.examples.length > 0) {
+        if (meaning.examples && settings.includeExamples) {
           actionResult += `\nExamples: ${meaning.examples.join(', ')}`;
         }
         toast({
           title: "Meaning provided",
-          description: "Definition and usage examples retrieved."
+          description: "Definition and usage examples retrieved based on your settings."
         });
         break;
       default:
@@ -103,7 +115,7 @@ const ChromeExtensionSimulator: React.FC = () => {
     <div className="my-6">
       <h2 className="text-xl font-semibold mb-2">Chrome Extension Simulator</h2>
       <p className="text-sm text-muted-foreground mb-4">
-        Select text below to see the extension popup in action
+        Select text below to see the extension popup in action. Changes in Settings will affect the transformations.
       </p>
       
       <Card className="mb-4">
